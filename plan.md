@@ -472,6 +472,10 @@ If something breaks and time is short, degrade in this order. Each step preserve
 
 ## 10. Git workflow
 
+**The two tracks use different workflows. This is deliberate, not an oversight.**
+
+### Prajwal — commit directly to `main`
+
 ```bash
 git pull --rebase        # ALWAYS before you push
 git add -A
@@ -479,6 +483,25 @@ git commit -m "..."
 git push
 ```
 
-Both developers on `main`. No feature branches — merge overhead is not affordable. Conflicts are prevented by the ownership table in §3, so if you find yourself editing a file in the other person's list, stop and message them instead.
+No branches, no PRs, no waiting on review. Nothing about your workflow changes.
+
+### Pukhraj — one branch and one PR per phase
+
+```bash
+git checkout main && git pull --rebase
+git checkout -b track-a/phase-N-<name>
+# ... work ...
+git push -u origin track-a/phase-N-<name>
+gh pr create --title "Phase N — <name>" --body "Closes #a, #b"
+gh pr merge --squash --delete-branch      # self-merge once criteria pass
+```
+
+Phases and dependency gates are in [`docs/EXECUTION_TRACK_A.md`](./docs/EXECUTION_TRACK_A.md).
+
+### Why the asymmetry
+
+Track A rebases onto `main` before every phase, so conflicts surface on the Track A side and get resolved there — Prajwal is never interrupted, and never blocked waiting for a review. Track A PRs self-merge as soon as their acceptance criteria pass; they exist to catch conflicts early and leave a record, not to gate anything.
+
+Conflicts are prevented primarily by the ownership table in §3. If you find yourself editing a file in the other person's list, stop and message them instead.
 
 Commit frequently. A commit every 30–45 minutes means a bad hour costs an hour, not the project.
