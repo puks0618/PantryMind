@@ -1,0 +1,12 @@
+{
+  "name": "pantrymind",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "lambda/*"
+  ],
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  }
+}
