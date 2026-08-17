@@ -51,8 +51,11 @@ Define the gates once per session, then run the router.
 ```bash
 gate_aws_cli()  { command -v aws >/dev/null 2>&1; }
 gate_creds()    { gate_aws_cli && aws sts get-caller-identity >/dev/null 2>&1; }
-gate_db()       { [ -n "${DATABASE_URL:-}" ] && command -v psql >/dev/null 2>&1 \
-                  && psql "$DATABASE_URL" -c 'SELECT 1' >/dev/null 2>&1; }
+gate_db()       { [ -n "${DATABASE_URL:-}" ] && node -e "
+                  const { Pool } = require('pg');
+                  const p = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: true } });
+                  p.query('SELECT 1').then(() => { p.end(); process.exit(0); }).catch(() => process.exit(1));
+                  " 2>/dev/null; }   # run from repo root so node resolves 'pg' — see §5 Phase 1 note on psql
 gate_bedrock()  { gate_creds && aws bedrock list-foundation-models \
                   --query "modelSummaries[?modelId=='amazon.titan-embed-text-v2:0']" \
                   --output text 2>/dev/null | grep -q titan; }
@@ -185,7 +188,7 @@ Nothing here waits on Prajwal, which is the point: this phase exists to convert 
 
 | Issue | Task | Note |
 | --- | --- | --- |
-| **#9** | Install Homebrew, then `brew install awscli libpq cockroachdb/tap/ccloud` | The install is unblocked. **`aws configure` needs #2 — defer that step alone if creds have not arrived.** |
+| **#9** | Install `aws`, `ccloud`, and `psql` | See below — Homebrew needs sudo, which was not available. Adapted. |
 | **#24** | `docs/demo-script.md` — the exact 3-minute narrative, turn by turn | **Write this first.** It defines what has to work, so it constrains every later phase. Anything not in it is out of scope. |
 | **#21** | `agent/config/system-prompt.md` | No dependencies despite being numbered late |
 
@@ -196,7 +199,30 @@ For **#21**, the prompt must explicitly instruct the agent to:
 
 That last bullet is what makes the demo legible on camera. An agent that silently uses memory looks identical to one that has none.
 
-**Acceptance:** `ccloud version` and `psql --version` work; both markdown files committed.
+#### ⚠ #9 — Homebrew needs sudo. It was not available on this machine. Here is the adaptation.
+
+`NONINTERACTIVE=1` Homebrew install still stops at "Need sudo access" — it requires an administrator
+password there is no way to supply non-interactively, and it should not be worked around by attempting
+privilege escalation. Two tools were installed anyway, without Homebrew and without sudo:
+
+- **`aws`** — downloaded the official `.pkg`, expanded it with `pkgutil --expand-full` (no sudo needed;
+  this unpacks the payload without ever invoking the installer as root), then copied the `aws-cli`
+  bundle into `~/.local/aws-cli` and symlinked `~/.local/bin/aws`.
+- **`ccloud`** — CockroachDB publishes direct per-platform tarballs at
+  `https://binaries.cockroachdb.com/ccloud/ccloud_darwin-<arch>_<version>.tar.gz` (verified with a HEAD
+  request before downloading). Extracted directly into `~/.local/bin`.
+
+**`psql` was not installed.** The only non-sudo path is Postgres.app, an 84–508MB download to obtain
+one CLI binary. Not worth it: `pg` (node-postgres) is already a dependency of `packages/shared`, hoisted
+to root `node_modules`, and does everything `psql` would be asked to do here. **`gate_db()` above and
+`#11` below use a `node -e` one-liner against `pg` instead of `psql`.** If `psql` genuinely becomes
+necessary later (e.g. interactive debugging), install Postgres.app then — don't block on it now.
+
+Both `~/.local/aws-cli` and `~/.local/bin` are **outside the repo** — this is machine setup, not
+something to commit. Ensure `~/.local/bin` is on `PATH` in any new shell: `export PATH="$HOME/.local/bin:$PATH"`.
+
+**Acceptance:** `aws --version` and `ccloud version` work; `psql` is intentionally absent, substituted
+by the `pg`-based check above; both markdown files committed.
 
 ---
 
@@ -207,12 +233,23 @@ That last bullet is what makes the demo legible on camera. An agent that silentl
 | Issue | Task |
 | --- | --- |
 | **#10** | `ccloud auth login`, `ccloud cluster list`, `ccloud cluster sql <name>`. Capture in `scripts/provision.sh`. |
-| **#11** | `psql "$DATABASE_URL" -f scripts/schema.sql` |
+| **#11** | Apply `scripts/schema.sql` — via `node -e` + `pg`, not `psql -f` (see Phase 1 note) |
 | **#12** | Write and apply `scripts/seed.sql` |
 
 **#10 — be accurate.** The cluster already exists; Prajwal created it. Put a comment in `provision.sh` saying so. Do not write `ccloud cluster create` commands implying you provisioned it. This script is the submission evidence for the `ccloud` CLI requirement and a judge may read it.
 
-**#11** — if `cspann` is unavailable on this cluster version, fall back to exact search with no index and **record it for the README**.
+**#11** — no `psql` binary on this machine (Phase 1). Apply the schema with:
+```bash
+node -e "
+const fs = require('fs');
+const { Client } = require('pg');
+const c = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: true } });
+c.connect().then(() => c.query(fs.readFileSync('scripts/schema.sql', 'utf8')))
+  .then(() => { console.log('schema applied'); return c.end(); })
+  .catch(e => { console.error(e); process.exit(1); });
+"
+```
+If `cspann` is unavailable on this cluster version, fall back to exact search with no index and **record it for the README**.
 
 **#12 — seed requirements:**
 - one demo user, handle `demo`
