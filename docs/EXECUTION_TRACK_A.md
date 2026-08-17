@@ -31,8 +31,19 @@ If S4 slips, stop building and drop down the fallback ladder in §8. Everything 
 ## 2. Environment prerequisites
 
 ```bash
-export PATH="$HOME/.local/bin:$PATH"   # gh lives here, not on the default PATH
+export PATH="$HOME/.local/bin:$PATH"   # gh, aws, ccloud all live here — not on the default PATH
 ```
+
+**Run this at the top of every Bash call that uses `gh`, `aws`, or `ccloud`.** `~/.zshenv` also exports
+this, but the tool sandbox resets `PATH` per invocation regardless of shell rc files — tested and
+confirmed, don't re-attempt fixing this via `.zshrc`/`.zshenv`. The explicit export is the only thing
+that reliably works here.
+
+**AWS credentials are live and do not need re-exporting.** `AWS_PROFILE=pantrymind` is set in
+`~/.zshenv` and *does* persist across Bash calls (unlike `PATH`, it isn't reset by the sandbox) — so
+once `aws` resolves via the `PATH` export above, `aws sts get-caller-identity` and every gate function
+in §3 already resolve to account `361769562408`, user `pukhraj-pantrymind`, with no `--profile` flag
+needed. Verified 2026-08-17.
 
 **One-time, must be done by the human — you cannot do this:**
 
