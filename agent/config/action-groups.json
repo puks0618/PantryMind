@@ -1,0 +1,202 @@
+{
+  "pantry": {
+    "openapi": "3.0.1",
+    "info": {
+      "title": "Pantry actions",
+      "version": "1.0.0",
+      "description": "CRUD over the user's pantry contents, plus expiry-urgency lookup."
+    },
+    "paths": {
+      "/addItem": {
+        "post": {
+          "operationId": "addItem",
+          "description": "Add a new item to the user's pantry.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["user_id", "name"],
+                  "properties": {
+                    "user_id": { "type": "string", "description": "The pantry owner's user id." },
+                    "name": { "type": "string", "description": "Item name, e.g. 'spinach'." },
+                    "quantity": { "type": "number", "description": "Amount of the item." },
+                    "unit": { "type": "string", "description": "Unit for quantity, e.g. 'oz', 'count'." },
+                    "expires_at": { "type": "string", "description": "ISO date the item expires, if known." },
+                    "category": { "type": "string", "description": "Category, e.g. 'produce', 'dairy'." }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "The created pantry item.", "content": { "application/json": { "schema": { "type": "object" } } } }
+          }
+        }
+      },
+      "/listItems": {
+        "post": {
+          "operationId": "listItems",
+          "description": "List all pantry items currently on hand for the user.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["user_id"],
+                  "properties": {
+                    "user_id": { "type": "string", "description": "The pantry owner's user id." }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Array of pantry items.", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } }
+          }
+        }
+      },
+      "/markConsumed": {
+        "post": {
+          "operationId": "markConsumed",
+          "description": "Mark a pantry item as consumed/used up.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["item_id"],
+                  "properties": {
+                    "item_id": { "type": "string", "description": "The pantry item's id." }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "The updated pantry item.", "content": { "application/json": { "schema": { "type": "object" } } } }
+          }
+        }
+      },
+      "/markWasted": {
+        "post": {
+          "operationId": "markWasted",
+          "description": "Mark a pantry item as wasted/thrown away. Use this when the user says they let something go bad.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["item_id"],
+                  "properties": {
+                    "item_id": { "type": "string", "description": "The pantry item's id." }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "The updated pantry item.", "content": { "application/json": { "schema": { "type": "object" } } } }
+          }
+        }
+      },
+      "/getExpiringItems": {
+        "post": {
+          "operationId": "getExpiringItems",
+          "description": "Get pantry items expiring soon, sorted most-urgent first. Use this before suggesting recipes so near-expiry items are prioritized.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["user_id"],
+                  "properties": {
+                    "user_id": { "type": "string", "description": "The pantry owner's user id." },
+                    "within_days": { "type": "integer", "description": "Look-ahead window in days. Defaults to 3." }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Array of pantry items expiring within the window, soonest first.", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } }
+          }
+        }
+      }
+    }
+  },
+  "recipes": {
+    "openapi": "3.0.1",
+    "info": {
+      "title": "Recipe matching",
+      "version": "1.0.0",
+      "description": "Find recipes matching pantry ingredients, ranked by near-expiry coverage."
+    },
+    "paths": {
+      "/findRecipes": {
+        "post": {
+          "operationId": "findRecipes",
+          "description": "Find recipes that can be made from the given ingredients, ranked to prioritize using up near-expiry items. Always pass 'exclude' when a recalled memory names an ingredient the user dislikes or avoids.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["ingredients", "near_expiry"],
+                  "properties": {
+                    "ingredients": { "type": "array", "items": { "type": "string" }, "description": "Pantry item names available to cook with." },
+                    "near_expiry": { "type": "array", "items": { "type": "string" }, "description": "Subset of ingredients that are near-expiry, used for ranking." },
+                    "exclude": { "type": "array", "items": { "type": "string" }, "description": "Disliked or avoided ingredients from recalled memory, to filter out." }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Array of matching recipes, best match first.", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } }
+          }
+        }
+      }
+    }
+  },
+  "shopping-list": {
+    "openapi": "3.0.1",
+    "info": {
+      "title": "Shopping list",
+      "version": "1.0.0",
+      "description": "Diff selected recipes' required ingredients against current pantry contents."
+    },
+    "paths": {
+      "/buildShoppingList": {
+        "post": {
+          "operationId": "buildShoppingList",
+          "description": "Given a set of chosen recipes, return the ingredients still needed that aren't already in the pantry.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["user_id", "recipe_ids"],
+                  "properties": {
+                    "user_id": { "type": "string", "description": "The pantry owner's user id." },
+                    "recipe_ids": { "type": "array", "items": { "type": "string" }, "description": "IDs of the recipes the user wants to cook." }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Array of missing ingredient names to buy.", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } }
+          }
+        }
+      }
+    }
+  }
+}
