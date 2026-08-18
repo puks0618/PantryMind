@@ -46,7 +46,7 @@ export function PantryItemRow({ item, onChanged }: Props) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
 
   const days = item.expires_at ? daysUntil(item.expires_at) : null;
   const level = urgency(days);
@@ -57,7 +57,6 @@ export function PantryItemRow({ item, onChanged }: Props) {
       setDraft(toDraft(item));
       setErrors({});
       setError(null);
-      setConfirmingDelete(false);
     }
     setOpen((prev) => !prev);
   }
@@ -107,12 +106,18 @@ export function PantryItemRow({ item, onChanged }: Props) {
     if (await send('PATCH', { status })) setOpen(false);
   }
 
-  async function handleDelete() {
+  /**
+   * Removes the row outright. Two-click confirm rather than window.confirm — a
+   * native dialog can't be styled and looks wrong on a screen recording.
+   *
+   * This is for mistakes. An item the user actually had should be retired with
+   * "Used it" / "Wasted it" inside the editor, which keeps the row and with it
+   * the waste-pattern signal the memory loop reads.
+   */
+  async function handleRemove() {
     if (saving) return;
-    // Two-click confirm rather than window.confirm — a native dialog can't be
-    // styled and looks wrong on a screen recording.
-    if (!confirmingDelete) {
-      setConfirmingDelete(true);
+    if (!confirmingRemove) {
+      setConfirmingRemove(true);
       return;
     }
     await send('DELETE');
@@ -120,23 +125,48 @@ export function PantryItemRow({ item, onChanged }: Props) {
 
   return (
     <li className={styles.item} data-urgency={level} data-status={item.status} data-open={open}>
-      <button
-        type="button"
-        className={styles.summary}
-        onClick={toggle}
-        aria-expanded={open}
-        aria-label={`Edit ${item.name}`}
-      >
-        <span className={styles.dot} />
-        <span className={styles.name}>{item.name}</span>
-        {item.status !== 'active' && <span className={styles.statusTag}>{item.status}</span>}
-        {item.quantity != null && (
-          <span className={styles.qty}>
-            {item.quantity} {item.unit ?? ''}
+      {/* Siblings, not nested — a button inside a button is invalid markup and
+          the remove control must not also toggle the editor. */}
+      <div className={styles.rowHead}>
+        <button
+          type="button"
+          className={styles.summary}
+          onClick={toggle}
+          aria-expanded={open}
+          aria-label={`Edit ${item.name}`}
+        >
+          <span className={styles.dot} />
+          {/* title so a name long enough to be ellipsised is still readable */}
+          <span className={styles.name} title={item.name}>
+            {item.name}
           </span>
-        )}
-        {days !== null && <span className={styles.expiry}>{expiryLabel(days)}</span>}
-      </button>
+          {item.status !== 'active' && <span className={styles.statusTag}>{item.status}</span>}
+          {item.quantity != null && (
+            <span className={styles.qty}>
+              {item.quantity} {item.unit ?? ''}
+            </span>
+          )}
+          {days !== null && <span className={styles.expiry}>{expiryLabel(days)}</span>}
+        </button>
+
+        <button
+          type="button"
+          className={styles.remove}
+          data-confirming={confirmingRemove}
+          onClick={handleRemove}
+          onBlur={() => setConfirmingRemove(false)}
+          disabled={saving}
+          title="Remove from list"
+          aria-label={
+            confirmingRemove ? `Confirm removing ${item.name}` : `Remove ${item.name} from list`
+          }
+        >
+          {confirmingRemove ? 'Remove?' : '×'}
+        </button>
+      </div>
+
+      {/* Outside the editor: a failed remove happens while the row is collapsed. */}
+      {error && <p className={styles.rowError}>{error}</p>}
 
       {open && (
         <form className={styles.editor} onSubmit={handleSave}>
@@ -147,7 +177,6 @@ export function PantryItemRow({ item, onChanged }: Props) {
             idPrefix={`item-${item.id}`}
             onChange={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
           />
-          {error && <p className={styles.fieldError}>{error}</p>}
 
           <div className={styles.actions}>
             <button type="submit" className={styles.btnPrimary} disabled={saving}>
@@ -194,15 +223,6 @@ export function PantryItemRow({ item, onChanged }: Props) {
                 Back to active
               </button>
             )}
-            <button
-              type="button"
-              className={styles.btnDanger}
-              onClick={handleDelete}
-              onBlur={() => setConfirmingDelete(false)}
-              disabled={saving}
-            >
-              {confirmingDelete ? 'Really delete?' : 'Delete'}
-            </button>
           </div>
         </form>
       )}
