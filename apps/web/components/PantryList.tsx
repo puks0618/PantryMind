@@ -48,6 +48,16 @@ export function PantryList() {
     void refresh();
   }, [refresh]);
 
+  // Chat mutations (addItem/updateItem/markConsumed/markWasted, all via
+  // Lambda tool calls) land in the same pantry_items table this panel reads,
+  // but nothing pushes a signal back to this component when that happens —
+  // poll instead of wiring cross-component state for what's a once-per-demo
+  // convenience.
+  useEffect(() => {
+    const interval = setInterval(() => void refresh(), 5000);
+    return () => clearInterval(interval);
+  }, [refresh]);
+
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     if (saving || !draft.name.trim()) return;
