@@ -1,0 +1,581 @@
+===============================================================================
+PANTRYMIND - PITCH & SUBMISSION PACK
+===============================================================================
+
+  PART 1   The 3-minute video script (timed, word-for-word)
+  PART 2   Stakeholder pitch (~6 minutes, conversational)
+  PART 3   CockroachDB tools we used  -> paste into Devpost
+  PART 4   AWS services we used       -> paste into Devpost
+  PART 5   Delivery notes, pre-flight checklist, likely questions
+  APPENDIX Sources
+
+  A NOTE ON ACCURACY. Every number and every technical claim in this document
+  was checked against the live database and the live AWS account before it was
+  written. Where something was built but is not running, this document says so
+  in plain words. That is deliberate. Judges can run EXPLAIN and can open our
+  GitHub issues. A claim that does not survive checking costs more than the
+  claim was ever worth.
+
+
+===============================================================================
+PART 1 - THE 3-MINUTE VIDEO SCRIPT
+===============================================================================
+
+Target 2:45. The 3:00 cap is hard - over-length submissions get rejected.
+
+TIMING BUDGET (measured, not guessed)
+  Spoken words in this script          345
+  At 145 wpm (natural pace)            2:23 of talking
+  Genuinely dead air                   ~25s  (2 chat responses, opening the
+                                              incognito window, cook preview)
+  Expected total                       2:47   <- 13s of headroom
+
+  If you speak slowly on camera (135 wpm) this lands at 2:58. That is still
+  under, but it is not comfortable - so rehearse, and if you are a slow
+  reader, take the first cut below before you record rather than after.
+
+  The stage cues say "work while you talk" for a reason - if you narrate the
+  clicking instead of talking over it, you will run 20-30 seconds long.
+
+  If you are over after a rehearsal, cut in this order:
+    1. the "Our Lambdas are deployed but not on the live path" line at 2:15
+       (it is fully covered in PART 4 and the README - the video does not
+        need it)
+    2. the cook block at 1:52
+    3. the second half of the problem block
+  Never cut 0:52-1:52. That minute is the entire judged criterion.
+
+Read it aloud against a stopwatch before recording. Twice.
+
+
+-------------------------------------------------------------------------------
+0:00 - 0:18   THE PROBLEM
+-------------------------------------------------------------------------------
+[ON SCREEN: title card, or just you.]
+
+  "Households bin six hundred and thirty million tonnes of food a year. For a
+   family of four, that's three thousand dollars.
+
+   And most of it doesn't spoil because people are careless. It spoils because
+   they forget - forgetting causes more waste than spoiling does.
+
+   So this isn't a fridge problem. It's a memory problem."
+
+
+-------------------------------------------------------------------------------
+0:18 - 0:52   SESSION ONE - IT LEARNS SOMETHING ABOUT YOU
+-------------------------------------------------------------------------------
+[ON SCREEN: the app, fresh load. Pantry right, chat left.]
+
+  "This is PantryMind. Real expiry dates - red goes tomorrow."
+
+[CLICK "+ Add item" -> spinach, produce, 1 bag, expiry 2 days out -> Save.]
+[Work while you talk. Don't narrate the clicking.]
+
+  "I'll add spinach that needs using up."
+
+[TYPE IN CHAT: "I really don't like cilantro, don't put it in recipes for me."]
+[PAUSE for the reply.]
+
+  "And I'll tell it something about myself.
+
+   That sentence just became a vector in CockroachDB. Not chat history - a
+   memory that outlives this conversation."
+
+
+-------------------------------------------------------------------------------
+0:52 - 1:52   *** THE CENTREPIECE - MEMORY ACROSS SESSIONS ***
+-------------------------------------------------------------------------------
+[CLOSE THE TAB. Open a brand-new incognito window. Load the app.]
+[Do this slowly and visibly. They must believe it's really gone.]
+
+  "Now I close the tab and open a brand-new private window. New session.
+   Nothing about cilantro has been said in here."
+
+[TYPE: "What should I cook tonight?"  Then STOP TALKING until it renders.]
+
+  "One question. No hints."
+
+[HOLD. Let the answer appear in silence.]
+
+  "Straight to the chicken and tomatoes - those expire tomorrow.
+
+   And this line. It left the cilantro out, and tells me why. It remembers. I
+   never said that in this window."
+
+[POINT AT the MemoryInspector similarity scores. Hold the shot.]
+
+  "That panel is the proof - what it pulled back, and how closely each matched.
+   A nearest-neighbour search across everything it knows about me, served by a
+   distributed vector index inside CockroachDB.
+
+   It doesn't just know what I own. It remembers what I'm like."
+
+
+-------------------------------------------------------------------------------
+1:52 - 2:15   IT'S A REAL APP, NOT A CHAT DEMO
+-------------------------------------------------------------------------------
+[CLICK "Cook a recipe" -> pick one -> the deduction preview appears.]
+
+  "And when I cook, it does the arithmetic. Three bananas out of five, and it
+   converts units - four ounces of butter off a pound.
+
+   Where it can't convert honestly, it says so instead of guessing."
+
+[CLICK "I cooked this". Pantry quantities drop.]
+
+  "Pantry updated."
+
+
+-------------------------------------------------------------------------------
+2:15 - 2:42   ARCHITECTURE, NAMED OUT LOUD
+-------------------------------------------------------------------------------
+[ON SCREEN: the architecture diagram from README.md]
+
+  "Underneath: CockroachDB holds the pantry and the memories together, with a
+   distributed vector index over every memory. We reached it with the ccloud
+   CLI.
+
+   On AWS it's all Bedrock. Titan makes the vectors, Claude Sonnet writes the
+   answer, Claude Haiku decides what's worth remembering.
+
+   Our Lambdas are deployed but not on the live path. The README says exactly
+   why."
+
+
+-------------------------------------------------------------------------------
+2:42 - 2:52   CLOSE
+-------------------------------------------------------------------------------
+[ON SCREEN: live URL + repo link]
+
+  "If food waste were a country, it'd be the third-largest emitter on Earth.
+   That's not a technology gap. It's a memory gap.
+
+   PantryMind. Thanks for watching."
+
+
+===============================================================================
+PART 2 - STAKEHOLDER PITCH (~6 MINUTES)
+===============================================================================
+
+Use this in the room, where you have time to be asked questions. Same story as
+Part 1, but with the reasoning shown.
+
+
+--- 1. OPEN WITH THE NUMBER --------------------------------------------------
+
+  "I want to start with a number that took me a while to believe.
+
+   Households around the world throw away about six hundred and thirty million
+   tonnes of food every year. Households - not farms, not supermarkets,
+   not restaurants. Us. That's sixty percent of all food waste, and it's about
+   a fifth of everything we buy.
+
+   Put it in money. The EPA now puts the cost at about seven hundred and
+   twenty-eight dollars per person per year. A family of four throws away
+   roughly two thousand nine hundred dollars of groceries a year. About
+   fifty-six dollars a week, in the bin.
+
+   And if you care about emissions: if food waste were a country, it would be
+   the third-largest emitter on Earth. Behind China and the United States,
+   ahead of everybody else. Four times the emissions of aviation."
+
+
+--- 2. THE TWIST: WHY THE OBVIOUS FIX DOESN'T WORK ----------------------------
+
+  "Now, the obvious response is: people need to be better organised. Track your
+   groceries. And a lot of apps have been built on exactly that idea.
+
+   But look at why food actually gets thrown out. It isn't mostly spoilage.
+   The two biggest causes are confusion about date labels, and simply
+   forgetting what you had. Eighty-eight percent of people throw food out near
+   the printed date at least sometimes, even when it's perfectly fine.
+
+   So the failure isn't that people don't know what's in the fridge. It's that
+   nobody remembers the pattern. Nobody remembers that you buy spinach with
+   good intentions and bin it every single time. Nobody remembers that you
+   don't like cilantro, so you quietly skip the recipe and the ingredients rot.
+
+   An inventory list can't fix that, because an inventory list has no memory.
+   It's a snapshot. Every week it starts over, exactly like you do."
+
+
+--- 3. WHAT WE BUILT ---------------------------------------------------------
+
+  "PantryMind is a pantry assistant with a memory that survives the
+   conversation.
+
+   You talk to it like a person. It knows what you have and when it expires.
+   But the important part is what it keeps: your preferences, your dietary
+   constraints, the feedback you give it, and - this is the one that matters -
+   your waste patterns.
+
+   Then, weeks later, in a completely new session, it uses them. Unprompted.
+
+   Here's the demo in one sentence: you tell it you don't like cilantro, you
+   close the browser, you come back in a brand-new private window, you ask what
+   to cook - and it recommends something without cilantro and tells you why it
+   left it out.
+
+   That's not a chat history trick. It's not in the same session. It went and
+   found that memory because it was relevant."
+
+
+--- 4. HOW IT ACTUALLY WORKS (PLAIN ENGLISH) ---------------------------------
+
+  "Three steps, every single time you send a message.
+
+   ONE - RECALL. We take what you just said and turn it into a vector: a list
+   of numbers that captures the meaning, not the words. Then we search every
+   memory we hold about you for the closest matches. That's why 'what should I
+   cook' can pull up 'I don't like cilantro' - the words don't overlap at all,
+   but the meaning connects.
+
+   TWO - RESPOND. We hand the model three things: your question, the memories
+   we just found, and your actual pantry with real expiry dates. It answers
+   with all of it in view. And we ask it to say out loud when a memory changed
+   its answer - because a recommendation you can't explain is one you won't
+   trust.
+
+   THREE - WRITE. After answering, a second, cheaper model reads the exchange
+   and asks: was anything here worth remembering? A preference, a constraint,
+   a complaint - yes. Small talk - no. Only the durable things become memories.
+   That's what stops the memory filling up with noise. And it happens in the
+   background, so it never slows your reply down.
+
+   The whole thing is that loop. Recall, respond, remember."
+
+
+--- 5. WHY THE DATABASE CHOICE MATTERS ---------------------------------------
+
+  "One thing worth calling out for the technical folks in the room.
+
+   Normally, doing this means running two databases: a regular one for your
+   pantry and your users, and a separate specialist vector database for the
+   memories. Two systems, two sets of credentials, two things to keep in sync,
+   and the constant risk they drift apart.
+
+   CockroachDB does both. Our pantry table and our memory vectors live side by
+   side, in one database, in one transaction boundary. The memory search is a
+   plain SQL query with a distributed vector index behind it.
+
+   For a team our size that's the difference between shipping and not
+   shipping."
+
+
+--- 6. MARKET --------------------------------------------------------------
+
+  "Is there an appetite for this? Demonstrably yes.
+
+   Too Good To Go - which does something much narrower, just surplus food from
+   shops - has a hundred and twenty million registered users. Fifteen million
+   in the US alone. People will absolutely install an app to waste less food.
+
+   The food-waste app market is around one and a half billion dollars today and
+   is forecast to reach about five billion by 2035, growing at roughly thirteen
+   percent a year.
+
+   But look at what's actually in that market: inventory trackers, barcode
+   scanners, receipt scanners, surplus marketplaces. All of them are better
+   snapshots. None of them remember you.
+
+   That's the opening. The moat here isn't the pantry list - anyone can build
+   that in a weekend. The moat is the memory. An assistant that has known you
+   for six months is genuinely hard to switch away from, because your
+   replacement starts from zero and you feel it immediately.
+
+   And the value compounds in the right direction. The longer you use it, the
+   better it gets, and the more it saves you."
+
+
+--- 7. WHAT'S NEXT ---------------------------------------------------------
+
+  "Three things, in order.
+
+   Near term: receipt scanning, so building your pantry isn't typing. That's
+   the single biggest drop-off point in every app in this category.
+
+   Middle: turn the waste patterns into a shopping brake. Right now we notice
+   you always bin the spinach. The obvious next step is to say so before you
+   buy it again - 'you've thrown this out three times, buy the small bag.'
+
+   Longer: households, not individuals. Shared memory across everyone who
+   cooks in the same kitchen.
+
+   What we'd want from you is a decision on which of those to fund first, and
+   whether this goes to market direct-to-consumer or through a grocery partner
+   - because the shopping-brake feature is worth considerably more sitting
+   inside a grocery app than beside it."
+
+
+===============================================================================
+PART 3 - COCKROACHDB TOOLS WE USED
+===============================================================================
+[Paste into the Devpost field. Two tools, stated precisely.]
+
+
+1. DISTRIBUTED VECTOR INDEXING  --  used, on the live request path
+--------------------------------------------------------------------------
+Every durable memory is stored in CockroachDB as a 1024-dimension vector, in
+the same database and the same schema as the pantry data - no separate vector
+store.
+
+  Table:      memory_vectors
+  Column:     embedding VECTOR(1024)      (matches Titan Text Embeddings V2)
+  Index:      VECTOR INDEX idx_memory_vec_user
+                    (user_id, embedding vector_cosine_ops)
+  Distance:   cosine, via the <=> operator
+  Cluster:    CockroachDB Cloud, v26.2.5
+
+What the agent actually does with it: on every single chat turn, before
+answering, it embeds the user's message and runs a nearest-neighbour search
+against that user's memories, taking the top 5 by cosine distance. Those
+memories are injected into the model's context, and the similarity score of
+each one is surfaced in the UI so the user can see exactly what was recalled
+and how strongly it matched. This is the mechanism behind the cross-session
+recall in the demo video.
+
+One engineering detail we'd rather volunteer than have found. Our first index
+was on the embedding column alone. Because recall is always scoped to a single
+user, the WHERE user_id = $1 filter meant a vector index without user_id as a
+prefix could not serve the query, and EXPLAIN showed the planner falling back
+to a full scan. We added a second index with user_id as the index prefix. The
+production recall query now plans as:
+
+    -> vector search
+         table: memory_vectors@idx_memory_vec_user
+         prefix spans: [user_id]
+
+That is the query the demo runs.
+
+
+2. ccloud CLI  --  used, for cluster access and connection management
+--------------------------------------------------------------------------
+Three commands, all in scripts/provision.sh, which is committed and runnable:
+
+  ccloud auth whoami                       - confirm the authenticated identity
+  ccloud cluster info <cluster-id> -o json - resolve the cluster
+  ccloud cluster sql <name> --connection-url
+                                           - emit the connection string
+                                             non-interactively, which is what
+                                             populates DATABASE_URL
+
+To be precise about scope: the cluster itself was created in the CockroachDB
+Cloud web console before that script existed. We did not use the CLI to
+provision it, and the script says so in its own header comment. We used the CLI
+to authenticate, locate the cluster, and pull the connection string into the
+app's environment.
+
+A genuine gotcha, in case it's useful to the CockroachDB team: `ccloud cluster
+list` returned an empty list for us even with valid access, because it scopes
+to the current organization and our login resolved to a different default org.
+Direct lookup by cluster ID worked immediately. That workaround is documented
+in the script.
+
+
+TOOLS WE DID NOT USE - stated so our other claims can be trusted
+--------------------------------------------------------------------------
+Managed MCP Server. We configured it - the server definition is committed at
+.mcp.json and agent/mcp/cockroach-mcp.json, pointed at our cluster. But the
+browser OAuth step was never completed, because our account was never added to
+the CockroachDB Cloud organization that owns the cluster, and that invite is
+held by our other team member. No query was ever run through it. We are not
+claiming this tool. It is tracked as an open issue (#23) in our repo.
+
+Agent Skills. Not used at all. It was never in scope for us.
+
+
+===============================================================================
+PART 4 - AWS SERVICES WE USED
+===============================================================================
+[Paste into the Devpost field.]
+
+
+AMAZON BEDROCK  --  live, on every request
+--------------------------------------------------------------------------
+Bedrock is the entire intelligence layer. Three models, two APIs:
+
+  Titan Text Embeddings V2 - amazon.titan-embed-text-v2:0 - InvokeModel API
+      Converts text into 1024-dimension vectors. Called twice per turn: once
+      on the incoming message to search memories, once on a memory summary
+      before it is stored. This is what makes semantic recall possible.
+
+  Claude Sonnet 4.5 - us.anthropic.claude-sonnet-4-5-20250929-v1:0 - Converse
+      Generates every reply, with recalled memories and live pantry contents
+      supplied in context.
+
+  Claude Haiku 4.5 - us.anthropic.claude-haiku-4-5-20251001-v1:0 - Converse
+      Runs after each reply and classifies the exchange: is this a preference,
+      feedback, an action, or just chatter? Only non-chatter becomes a durable
+      memory. Using the smaller, cheaper model for the high-frequency
+      classification job is a deliberate cost decision.
+
+Both Claude models are invoked through cross-region inference profiles - the
+"us." prefix - because on-demand throughput is not offered for them directly.
+
+
+AWS LAMBDA, AWS SAM, CLOUDFORMATION  --  deployed and verified, NOT on the
+live request path
+--------------------------------------------------------------------------
+We built and deployed seven Node 22 Lambda functions to us-east-1 through AWS
+SAM (CloudFormation stack "pantrymind"): three business-logic functions for
+pantry, recipes and shopping-list operations, three Bedrock action-group
+adapter functions, and a hello-world. They are verified working by direct
+invocation, with CloudWatch Logs as evidence.
+
+They are not serving traffic, and here is the honest reason.
+
+Those Lambdas were designed as action groups for a Bedrock Agent - that was our
+tool-calling layer, with OpenAPI schemas written and adapters deployed. Partway
+through the build, our CreateAgent call started returning:
+
+    AccessDeniedException: Bedrock Agents is in Maintenance Mode.
+    New agent creation is not available for accounts without prior
+    service usage.
+
+AWS moved Bedrock Agents ("Classic") into Maintenance Mode on 2026-07-30 and
+closed it to any account with no prior Agents usage. There is no exception
+process. Our account had never created one, so it was permanently locked out,
+regardless of how correct our IAM roles and adapters were - and we had verified
+all of those independently before this surfaced. The migration path, Bedrock
+AgentCore, is a full re-architecture rather than a swap-in, which was not
+realistic in the hours remaining.
+
+So we moved the reasoning to the Bedrock Converse API, and the shipped app
+calls CockroachDB directly from its API routes. What we lost was
+Bedrock-mediated tool calling; we compensated by loading live pantry contents
+straight into the model's context instead. The Lambdas and the OpenAPI action
+group definitions remain in the repository as evidence of the work and as the
+starting point if we revisit AgentCore.
+
+CloudWatch Logs is in use for Lambda logging. We have not set up custom metrics
+or alarms, so we are not claiming observability beyond the default.
+
+
+AMAZON S3  --  we are not claiming it
+--------------------------------------------------------------------------
+We provisioned a bucket early for demo assets and then never used it. It is
+empty, and no application code reads or writes S3.
+
+The one real S3 involvement is indirect: AWS SAM uploads our bundled Lambda
+packages and CloudFormation templates to its managed artifact bucket on every
+deploy. That is S3 as a build-artifact store, not a product feature, and we
+would rather say that than pad the list.
+
+
+===============================================================================
+PART 5 - DELIVERY NOTES
+===============================================================================
+
+PRE-FLIGHT, BEFORE YOU HIT RECORD
+--------------------------------------------------------------------------
+  [ ] Re-run scripts/seed.sql, then scripts/backfill-embeddings.ts.
+      In that order. Seed does not populate memory_vectors - each row needs a
+      real embedding, and backfill is what creates them. Skipping backfill
+      means the recall beat silently returns nothing, which kills the demo.
+  [ ] Confirm the pantry shows ~15 items with red/amber expiry dots.
+  [ ] Confirm "Cook a recipe" opens and lists 8 recipes.
+  [ ] Do one full dry run, both sessions, before recording. This has never
+      been run end to end (issue #37).
+  [ ] Do NOT run `next build` while the dev server is up - it corrupts .next
+      and the page goes blank.
+  [ ] Session 2 must be a genuinely new incognito window, not a reload. The
+      point is a new session id.
+
+PACING
+--------------------------------------------------------------------------
+  If you run long, cut from the architecture section at 2:25.
+  Never cut from 1:00-2:00. That minute is the entire judged criterion.
+
+TONE
+--------------------------------------------------------------------------
+  Short sentences. Let the recall moment breathe - hold the shot and stop
+  talking for a second after the answer appears. Silence reads as confidence.
+  Don't apologise for what isn't finished; state it flatly and move on. The
+  "not on the live path" line lands better as a fact than as an excuse - and
+  if someone asks why, the full answer is in PART 5 below.
+
+
+THE THREE QUESTIONS YOU WILL GET
+--------------------------------------------------------------------------
+
+Q: "Isn't this just a to-do list with extra steps?"
+
+   "A list tells you what you have. It can't tell you that you've bought and
+    binned spinach four times. That's the thing that actually changes
+    behaviour, and it needs memory across months, not a snapshot. That's the
+    whole product."
+
+
+Q: "Why didn't you use Bedrock Agents? Wasn't that the point?"
+
+   "It was our plan, and we built for it - the action groups and adapters are
+    in the repo, deployed and tested. AWS closed Agents to new accounts on
+    July 30th, partway through our build, with no exception process. We found
+    out when CreateAgent returned an access-denied. Rather than attempt a
+    full re-architecture onto AgentCore with hours left, we moved the
+    reasoning to the Converse API. The judged behaviour - memory that
+    persists and visibly changes recommendations - is fully working. We just
+    got there by a different route."
+
+
+Q: "Does that vector index actually get used, or is it decorative?"
+
+   "Fair question, and it was decorative until we checked. Our first index
+    was on the embedding column alone, and because recall is filtered by
+    user, EXPLAIN showed a full scan straight past it. We added user_id as
+    the index prefix. The production query now plans as a vector search
+    against that index, with prefix spans on the user. Happy to run EXPLAIN
+    for you."
+
+
+IF SOMETHING BREAKS ON CAMERA
+--------------------------------------------------------------------------
+  Recall returns nothing  -> backfill-embeddings.ts wasn't run. Re-run, reload.
+  Page is blank           -> `next build` clobbered .next. Stop dev server,
+                             rm -rf apps/web/.next, restart.
+  Chat is slow            -> first Bedrock call is cold. Send one throwaway
+                             message before recording.
+
+
+===============================================================================
+APPENDIX - SOURCES
+===============================================================================
+
+  631 Mt household waste / 60% of total / 1.05 bn tonnes / ~1 billion meals a
+  day / 79 kg per capita
+      UNEP Food Waste Index Report 2024
+      https://www.unep.org/resources/publication/food-waste-index-report-2024
+
+  Food waste = 3rd-largest emitter if it were a country; >4x aviation
+      World Resources Institute
+      https://www.wri.org/insights/whats-food-loss-and-waste-got-do-climate-change-lot-actually
+
+  ~8-10% of global greenhouse gas emissions
+      WRAP
+      https://www.wrap.ngo/media-centre/press-releases/food-waste-contributes-10-percent-global-emissions
+
+  $728 per person per year / ~$2,913 per family of four / ~$56 per week
+      US EPA, "Estimating the Cost of Food Waste to American Consumers" (2025)
+      https://www.epa.gov/system/files/documents/2025-04/costoffoodwastereport_508.pdf
+
+  $780 per capita / ~$261 bn nationally
+      ReFED, Understanding Consumer Food Waste (July 2025)
+      https://refed.org/uploads/consumer-food-waste-report-2025-final.pdf
+
+  88% discard food near the printed date; date confusion and forgetting exceed
+  spoilage; ~20% of household waste attributed to "expired"
+      WWF, Understanding Food Expiration Dates
+      https://www.worldwildlife.org/news/magazine/summer-2023/pulling-back-the-curtain-on-food-expiration-dates
+      CSPI, Date labels and food waste
+      https://www.cspi.org/cspi-news/date-labels-and-food-waste-heres-what-know
+
+  Food-waste app market ~$1.47 bn (2025) -> ~$5 bn (2035), ~13% CAGR
+      Wise Guy Reports, Food Waste App Market
+      https://www.wiseguyreports.com/reports/food-waste-app-market
+
+  Too Good To Go: 120 M users globally, 15 M+ in the US
+      Too Good To Go press release, 2025
+      https://www.prnewswire.com/news-releases/too-good-to-go-accelerates-us-expansion-through-rapidly-growing-partner-network-302539498.html
+
+===============================================================================

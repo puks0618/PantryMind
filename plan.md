@@ -1,5 +1,11 @@
 # PantryMind — Two-Developer Work Plan
 
+> ⚠️ **Superseded as a record of what shipped — see [README.md](README.md).**
+> This is the original build plan. Its tool claims are out of date: Bedrock
+> Agents was descoped (AWS Maintenance Mode), the chat route does not call
+> `InvokeAgent`, S3 is unused, and the Managed MCP Server was never
+> authenticated. README.md is the accurate account.
+
 > **If you are Claude Code reading this for the first time: read this entire file before writing any code.**
 > It is the coordination contract between two developers working in parallel on the same repository.
 > Your human partner is one of two people. Find your track in §6 or §7 and stay inside it.

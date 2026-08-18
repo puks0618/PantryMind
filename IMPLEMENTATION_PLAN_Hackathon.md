@@ -1,5 +1,9 @@
 # PantryMind — Implementation Plan
 
+> ⚠️ **Superseded as a record of what shipped — see [README.md](README.md).**
+> This is the original architecture doc. Its claimed AWS/CockroachDB tool list
+> is aspirational, not what was delivered. README.md is the accurate account.
+
 > **Audience:** This document is written for an AI coding agent (Claude Code / Copilot Agent in VS Code) executing this project inside the repository. Read this file in full before writing any code. Execute phases in order. Do not skip acceptance criteria.
 
 ---

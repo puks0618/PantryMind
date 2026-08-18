@@ -52,3 +52,10 @@ CREATE TABLE memory_vectors (
 -- fall back to exact search: ORDER BY embedding <=> $1 with no index.
 -- Note the fallback in the README if used.
 CREATE INDEX idx_memory_vec ON memory_vectors USING cspann (embedding vector_cosine_ops);
+
+-- Recall is always scoped to one user (packages/memory/src/recall.ts), and a
+-- vector index can only serve a filtered ANN search if the filter column is a
+-- prefix of the index. Without this, EXPLAIN on the real recall query falls back
+-- to a FULL SCAN and idx_memory_vec above is never used.
+CREATE INDEX idx_memory_vec_user ON memory_vectors
+  USING cspann (user_id, embedding vector_cosine_ops);

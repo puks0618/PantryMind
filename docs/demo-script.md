@@ -48,12 +48,22 @@ Close the tab. Open a brand-new incognito window. New session ID, same demo user
 
 ## 2:10–2:45 — Architecture, named out loud
 
-Cut to `docs/architecture.png`.
+Cut to the architecture diagram in `README.md`. (There is no `docs/architecture.png` — the
+README's ASCII diagram is the real one.)
 
-> "Under the hood: CockroachDB Cloud, provisioned and queried via the ccloud CLI, with a
-> distributed vector index over every memory embedding, and a Managed MCP Server the agent
-> queries directly. On AWS: Bedrock Agents for reasoning, Lambda for pantry and recipe logic,
-> S3 for demo assets, and Titan embeddings generated on every turn."
+> "Under the hood: CockroachDB Cloud. Every memory is a 1024-dimension vector, and recall runs
+> as a nearest-neighbour search served by a distributed vector index. We reached the cluster
+> with the ccloud CLI. On AWS, everything runs through Bedrock — Titan Text Embeddings turn
+> each memory into a vector, Claude Sonnet writes the reply, and Claude Haiku decides what is
+> worth remembering. Lambda and the action-group adapters are deployed and verified, but they
+> are not on the live path: AWS closed Bedrock Agents to new accounts mid-build, so the app
+> calls the database directly instead."
+
+**Verified claims only.** The previous version of this paragraph said the ccloud CLI provisioned
+the cluster, that the agent queries a Managed MCP Server, that Bedrock Agents does the reasoning,
+and that S3 stores demo assets. All four were false — the cluster was created in the web console,
+MCP OAuth was never completed (issue #23 is still open), Bedrock Agents was descoped, and the S3
+bucket is empty. Do not reinstate any of them. See `README.md` for the full disclosure.
 
 ## 2:45–3:00 — Close
 
