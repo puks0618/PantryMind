@@ -17,7 +17,13 @@ export interface Recipe {
   id: string;
   external_id: string | null;
   title: string;
-  ingredients: { name: string; amount?: string }[];
+  /**
+   * `quantity` + `unit` were added so cooking a recipe can deduct the right
+   * amount from the pantry — `amount` is free text and can't be subtracted.
+   * Both are optional and additive: existing readers (shopping-list only uses
+   * `name`) are unaffected.
+   */
+  ingredients: { name: string; amount?: string; quantity?: number | null; unit?: string | null }[];
   instructions: string | null;
   source_url: string | null;
 }

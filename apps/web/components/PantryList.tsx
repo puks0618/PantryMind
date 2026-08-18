@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import type { FieldErrors } from '@pantrymind/shared';
 import { PantryItemFields, EMPTY_DRAFT, type ItemDraft } from './PantryItemFields';
 import { PantryItemRow } from './PantryItemRow';
+import { CookPanel } from './CookPanel';
 import type { PantryRow } from './pantry-item';
 import styles from './PantryList.module.css';
 
@@ -141,6 +142,8 @@ export function PantryList() {
           + Add item
         </button>
       )}
+
+      <CookPanel onCooked={refresh} />
 
       {loading && <p className={styles.muted}>Loading&hellip;</p>}
       {error && <p className={styles.errorText}>{error}</p>}
