@@ -68,9 +68,10 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["item_id"],
+                  "required": ["item_id", "user_id"],
                   "properties": {
-                    "item_id": { "type": "string", "description": "The pantry item's id." }
+                    "item_id": { "type": "string", "description": "The pantry item's id." },
+                    "user_id": { "type": "string", "description": "The pantry owner's user id." }
                   }
                 }
               }
@@ -91,9 +92,10 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["item_id"],
+                  "required": ["item_id", "user_id"],
                   "properties": {
-                    "item_id": { "type": "string", "description": "The pantry item's id." }
+                    "item_id": { "type": "string", "description": "The pantry item's id." },
+                    "user_id": { "type": "string", "description": "The pantry owner's user id." }
                   }
                 }
               }
@@ -101,6 +103,60 @@
           },
           "responses": {
             "200": { "description": "The updated pantry item.", "content": { "application/json": { "schema": { "type": "object" } } } }
+          }
+        }
+      },
+      "/updateItem": {
+        "post": {
+          "operationId": "updateItem",
+          "description": "Change fields on an existing pantry item — quantity, unit, expiry date, category, name, or status. Only send the fields that change; omitted fields are left as they are. Use this when the user corrects something, e.g. 'the milk actually expires Friday' or 'I only have two tomatoes left'.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["item_id", "user_id"],
+                  "properties": {
+                    "item_id": { "type": "string", "description": "The pantry item's id." },
+                    "user_id": { "type": "string", "description": "The pantry owner's user id." },
+                    "name": { "type": "string", "description": "New item name." },
+                    "category": { "type": "string", "description": "New category, e.g. 'produce', 'dairy'." },
+                    "quantity": { "type": "number", "description": "New amount of the item." },
+                    "unit": { "type": "string", "description": "New unit for quantity, e.g. 'oz', 'count'." },
+                    "expires_at": { "type": "string", "description": "New expiry date as YYYY-MM-DD." },
+                    "status": { "type": "string", "description": "One of: active, consumed, wasted." }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "The updated pantry item.", "content": { "application/json": { "schema": { "type": "object" } } } }
+          }
+        }
+      },
+      "/deleteItem": {
+        "post": {
+          "operationId": "deleteItem",
+          "description": "Permanently remove a pantry item. Use this only for mistakes — an item that was added by accident or misheard. If the user actually ate it or threw it out, use markConsumed or markWasted instead so the record is kept.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["item_id", "user_id"],
+                  "properties": {
+                    "item_id": { "type": "string", "description": "The pantry item's id." },
+                    "user_id": { "type": "string", "description": "The pantry owner's user id." }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Confirmation that the item was deleted.", "content": { "application/json": { "schema": { "type": "object" } } } }
           }
         }
       },
