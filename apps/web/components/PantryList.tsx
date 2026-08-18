@@ -1,98 +1,155 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import type { FieldErrors } from '@pantrymind/shared';
+import { PantryItemFields, EMPTY_DRAFT, type ItemDraft } from './PantryItemFields';
+import { PantryItemRow } from './PantryItemRow';
+import type { PantryRow } from './pantry-item';
 import styles from './PantryList.module.css';
 
-interface PantryItemRow {
-  id: string;
-  name: string;
-  category: string | null;
-  quantity: string | number | null;
-  unit: string | null;
-  expires_at: string | null;
-  status: string;
-}
-
-function daysUntil(dateStr: string): number {
-  // pg returns CockroachDB's DATE columns as full ISO timestamps
-  // ("2026-08-19T00:00:00.000Z"), not plain "YYYY-MM-DD" — parse as-is
-  // rather than assuming a shape and concatenating a time suffix onto it.
-  const target = new Date(dateStr).getTime();
-  const now = new Date();
-  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  return Math.round((target - todayUtc) / 86_400_000);
-}
-
-function urgency(days: number | null): 'crit' | 'warn' | 'ok' {
-  if (days === null) return 'ok';
-  if (days <= 1) return 'crit';
-  if (days <= 3) return 'warn';
-  return 'ok';
-}
-
-function expiryLabel(days: number): string {
-  if (days < 0) return 'expired';
-  if (days === 0) return 'today';
-  if (days === 1) return 'tomorrow';
-  return `${days}d`;
+/** Blank strings mean "not set" — send null so the column stays empty. */
+function draftToBody(draft: ItemDraft): Record<string, string | null> {
+  return {
+    name: draft.name,
+    category: draft.category || null,
+    quantity: draft.quantity || null,
+    unit: draft.unit || null,
+    expires_at: draft.expires_at || null,
+  };
 }
 
 export function PantryList() {
-  const [items, setItems] = useState<PantryItemRow[]>([]);
+  const [items, setItems] = useState<PantryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/pantry')
-      .then((res) => {
-        if (!res.ok) throw new Error('Could not load pantry items');
-        return res.json();
-      })
-      .then((data: PantryItemRow[]) => {
-        if (!cancelled) setItems(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState<ItemDraft>(EMPTY_DRAFT);
+  const [addErrors, setAddErrors] = useState<FieldErrors>({});
+  const [addError, setAddError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [showInactive, setShowInactive] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setError(null);
+    try {
+      const res = await fetch('/api/pantry');
+      if (!res.ok) throw new Error('Could not load pantry items');
+      setItems((await res.json()) as PantryRow[]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const active = items.filter((i) => i.status === 'active');
-  const sorted = [...active].sort((a, b) => {
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  async function handleAdd(e: FormEvent) {
+    e.preventDefault();
+    if (saving || !draft.name.trim()) return;
+
+    setSaving(true);
+    setAddError(null);
+    setAddErrors({});
+    try {
+      const res = await fetch('/api/pantry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draftToBody(draft)),
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        if (detail?.errors) {
+          setAddErrors(detail.errors);
+          return;
+        }
+        throw new Error(detail?.error ?? `Request failed (${res.status})`);
+      }
+      setDraft(EMPTY_DRAFT);
+      setAdding(false);
+      await refresh();
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const visible = items.filter((i) => (showInactive ? true : i.status === 'active'));
+  const sorted = [...visible].sort((a, b) => {
     if (!a.expires_at) return 1;
     if (!b.expires_at) return -1;
     return a.expires_at.localeCompare(b.expires_at);
   });
+  const inactiveCount = items.length - items.filter((i) => i.status === 'active').length;
 
   return (
     <aside className={styles.pane} aria-label="Pantry items">
-      <h2 className={styles.heading}>Your pantry</h2>
+      <div className={styles.headingRow}>
+        <h2 className={styles.heading}>Your pantry</h2>
+        {inactiveCount > 0 && (
+          <label className={styles.toggle}>
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+            />
+            Show used/wasted ({inactiveCount})
+          </label>
+        )}
+      </div>
+
+      {adding ? (
+        <form className={styles.addForm} onSubmit={handleAdd}>
+          <PantryItemFields
+            draft={draft}
+            errors={addErrors}
+            disabled={saving}
+            idPrefix="add"
+            onChange={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
+          />
+          {addError && <p className={styles.fieldError}>{addError}</p>}
+          <div className={styles.actions}>
+            <button
+              type="submit"
+              className={styles.btnPrimary}
+              disabled={saving || !draft.name.trim()}
+            >
+              {saving ? 'Adding…' : 'Add item'}
+            </button>
+            <button
+              type="button"
+              className={styles.btnGhost}
+              onClick={() => {
+                setAdding(false);
+                setDraft(EMPTY_DRAFT);
+                setAddErrors({});
+                setAddError(null);
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" className={styles.addRow} onClick={() => setAdding(true)}>
+          + Add item
+        </button>
+      )}
+
       {loading && <p className={styles.muted}>Loading&hellip;</p>}
       {error && <p className={styles.errorText}>{error}</p>}
       {!loading && !error && sorted.length === 0 && <p className={styles.muted}>No items yet.</p>}
+
       <ul className={styles.list}>
-        {sorted.map((item) => {
-          const days = item.expires_at ? daysUntil(item.expires_at) : null;
-          const level = urgency(days);
-          return (
-            <li key={item.id} className={styles.item} data-urgency={level}>
-              <span className={styles.dot} />
-              <span className={styles.name}>{item.name}</span>
-              {item.quantity != null && (
-                <span className={styles.qty}>
-                  {item.quantity} {item.unit ?? ''}
-                </span>
-              )}
-              {days !== null && <span className={styles.expiry}>{expiryLabel(days)}</span>}
-            </li>
-          );
-        })}
+        {sorted.map((item) => (
+          <PantryItemRow key={item.id} item={item} onChanged={refresh} />
+        ))}
       </ul>
     </aside>
   );
