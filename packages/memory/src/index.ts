@@ -21,7 +21,7 @@ export async function handleTurn(
   message: string,
 ): Promise<ChatResponse> {
   const memories = await recall(userId, message);
-  const answer = await responder.respond(message, memories);
+  const answer = await responder.respond(userId, message, memories);
 
   write(userId, sessionId, message, answer).catch((err) => {
     console.error('write() failed for this turn:', err);
