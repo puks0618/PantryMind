@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: PantryMind Lambda functions
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 10
+    MemorySize: 256
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pantrymind-hello-world
+      CodeUri: lambda/hello-world/
+      Handler: index.handler
+
+  PantryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pantrymind-pantry
+      CodeUri: lambda/pantry/
+      Handler: index.handler
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseUrl
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: "node22"
+        EntryPoints:
+          - index.ts
+
+  RecipesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pantrymind-recipes
+      CodeUri: lambda/recipes/
+      Handler: index.handler
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseUrl
+          SPOONACULAR_API_KEY: !Ref SpoonacularApiKey
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: "node22"
+        EntryPoints:
+          - index.ts
+
+  ShoppingListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pantrymind-shopping-list
+      CodeUri: lambda/shopping-list/
+      Handler: index.handler
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseUrl
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: "node22"
+        EntryPoints:
+          - index.ts
+
+Parameters:
+  DatabaseUrl:
+    Type: String
+    NoEcho: true
+    Description: CockroachDB connection string (from local .env, never committed)
+  SpoonacularApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: Optional — recipes Lambda falls back to the cache table when empty
+
+Outputs:
+  HelloWorldFunctionArn:
+    Value: !GetAtt HelloWorldFunction.Arn
+  PantryFunctionArn:
+    Value: !GetAtt PantryFunction.Arn
+  RecipesFunctionArn:
+    Value: !GetAtt RecipesFunction.Arn
+  ShoppingListFunctionArn:
+    Value: !GetAtt ShoppingListFunction.Arn
