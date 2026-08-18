@@ -95,3 +95,73 @@ INSERT INTO interactions (user_id, session_id, role, content, summary, kind, cre
   ('00000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'assistant',
    'That is the second time with leafy greens — I will flag them earlier from now on.', NULL, 'chatter',
    now() - INTERVAL '6 days' + INTERVAL '1 minute');
+
+-- ---- Recipes: cookable set for the "I cooked this" pantry deduction.
+-- ---- Ingredients carry structured {name, quantity, unit} — free-text `amount`
+-- ---- can't be subtracted from a pantry quantity. Units are chosen to exercise
+-- ---- all three paths: exact match (count/count), cross-unit conversion within
+-- ---- a dimension (oz -> lb, cup -> gallon), and deliberately unresolvable
+-- ---- (cups of flour out of a "bag") so the preview's warning path is visible.
+-- ---- Scoped by the 'seed-' external_id prefix so re-running stays idempotent.
+DELETE FROM recipes WHERE external_id LIKE 'seed-%';
+
+INSERT INTO recipes (external_id, title, ingredients, instructions, source_url) VALUES
+  ('seed-banana-bread', 'Banana Bread',
+   '[{"name":"bananas","quantity":3,"unit":"count"},
+     {"name":"butter","quantity":4,"unit":"oz"},
+     {"name":"flour","quantity":2,"unit":"cup"}]'::jsonb,
+   'Mash the bananas, melt the butter, fold in the flour, bake 55 minutes at 175C.',
+   NULL),
+
+  ('seed-chicken-rice', 'One-Pan Chicken and Rice',
+   '[{"name":"chicken thighs","quantity":1,"unit":"lb"},
+     {"name":"rice","quantity":8,"unit":"oz"},
+     {"name":"onions","quantity":1,"unit":"count"},
+     {"name":"garlic","quantity":1,"unit":"bulb"}]'::jsonb,
+   'Brown the thighs, soften the onion and garlic, add rice and stock, cover and cook 25 minutes.',
+   NULL),
+
+  ('seed-tomato-pasta', 'Tomato Pasta',
+   '[{"name":"tomatoes","quantity":4,"unit":"count"},
+     {"name":"pasta","quantity":1,"unit":"box"},
+     {"name":"garlic","quantity":1,"unit":"bulb"},
+     {"name":"cheddar cheese","quantity":2,"unit":"oz"}]'::jsonb,
+   'Blister the tomatoes with garlic, toss through the pasta, finish with grated cheese.',
+   NULL),
+
+  ('seed-yogurt-bowl', 'Yogurt and Banana Bowl',
+   '[{"name":"greek yogurt","quantity":1,"unit":"tub"},
+     {"name":"bananas","quantity":2,"unit":"count"}]'::jsonb,
+   'Spoon the yogurt into a bowl and top with sliced banana.',
+   NULL),
+
+  ('seed-pepper-frittata', 'Bell Pepper Frittata',
+   '[{"name":"bell peppers","quantity":2,"unit":"count"},
+     {"name":"cheddar cheese","quantity":3,"unit":"oz"},
+     {"name":"onions","quantity":1,"unit":"count"},
+     {"name":"eggs","quantity":6,"unit":"count"}]'::jsonb,
+   'Soften the peppers and onion, pour over beaten eggs, top with cheese, finish under the grill.',
+   NULL),
+
+  ('seed-black-bean-bowl', 'Black Bean Rice Bowl',
+   '[{"name":"canned black beans","quantity":1,"unit":"can"},
+     {"name":"rice","quantity":1,"unit":"cup"},
+     {"name":"tomatoes","quantity":2,"unit":"count"},
+     {"name":"onions","quantity":1,"unit":"count"}]'::jsonb,
+   'Warm the beans, cook the rice, top with chopped tomato and onion.',
+   NULL),
+
+  ('seed-cheese-toast', 'Cheese on Toast',
+   '[{"name":"bread","quantity":2,"unit":"slice"},
+     {"name":"cheddar cheese","quantity":2,"unit":"oz"},
+     {"name":"butter","quantity":0.5,"unit":"oz"}]'::jsonb,
+   'Toast the bread, butter it, cover with cheese and grill until bubbling.',
+   NULL),
+
+  ('seed-carrot-soup', 'Carrot and Garlic Soup',
+   '[{"name":"carrots","quantity":1,"unit":"bag"},
+     {"name":"onions","quantity":2,"unit":"count"},
+     {"name":"garlic","quantity":1,"unit":"bulb"},
+     {"name":"milk","quantity":1,"unit":"cup"}]'::jsonb,
+   'Roast the carrots with garlic, soften the onion, blend with stock and a splash of milk.',
+   NULL);

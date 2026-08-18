@@ -89,7 +89,37 @@ const UNIT_ALIASES: Record<string, string> = {
   bottles: 'bottle',
   jars: 'jar',
   packs: 'pack',
+  // Volume spellings, needed so recipe amounts line up with pantry units.
+  tsps: 'tsp',
+  teaspoon: 'tsp',
+  teaspoons: 'tsp',
+  tbsps: 'tbsp',
+  tbs: 'tbsp',
+  tablespoon: 'tbsp',
+  tablespoons: 'tbsp',
+  'fl oz': 'floz',
+  'fluid ounce': 'floz',
+  'fluid ounces': 'floz',
+  gal: 'gallon',
+  gallons: 'gallon',
+  qt: 'quart',
+  quarts: 'quart',
+  pt: 'pint',
+  pints: 'pint',
+  sticks: 'stick',
 };
+
+/**
+ * Canonical spelling for a unit: trimmed, lowercased, alias-resolved.
+ * Exported because cook.ts converts between units and has to agree with the
+ * parser on what "lbs" and "tablespoons" are called.
+ */
+export function normaliseUnit(raw: string | null | undefined): string | null {
+  if (raw === null || raw === undefined) return null;
+  const unit = String(raw).trim().toLowerCase();
+  if (unit.length === 0) return null;
+  return UNIT_ALIASES[unit] ?? unit;
+}
 
 export interface CreateFields {
   name: string;
@@ -187,10 +217,8 @@ function parseQuantity(raw: unknown): number | null {
 function parseUnit(raw: unknown): string | null {
   if (raw === null || raw === undefined) return null;
   if (typeof raw !== 'string') throw 'Unit must be text.';
-  const unit = raw.trim().toLowerCase();
-  if (unit.length === 0) return null;
-  if (unit.length > UNIT_MAX) throw `Unit must be ${UNIT_MAX} characters or fewer.`;
-  return UNIT_ALIASES[unit] ?? unit;
+  if (raw.trim().length > UNIT_MAX) throw `Unit must be ${UNIT_MAX} characters or fewer.`;
+  return normaliseUnit(raw);
 }
 
 function parseExpiresAt(raw: unknown): string | null {

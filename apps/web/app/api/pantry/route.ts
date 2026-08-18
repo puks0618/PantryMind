@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { pool, parseCreate, resolveDemoUserId, PANTRY_ITEM_COLUMNS } from '@pantrymind/shared';
 
+/** Live pantry state — never prerender at build time, never serve from cache. */
+export const dynamic = 'force-dynamic';
+
 /** GET /api/pantry — every item for the (single, hardcoded) demo user. */
 export async function GET() {
   try {
