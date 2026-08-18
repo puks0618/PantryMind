@@ -1,22 +1,31 @@
-import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
+import { BedrockRuntimeClient, ConverseCommand, type ContentBlock, type Message } from '@aws-sdk/client-bedrock-runtime';
 import { pool, type RecalledMemory } from '@pantrymind/shared';
 import { SYSTEM_PROMPT } from './system-prompt';
+import { TOOL_CONFIG, executeTool } from './tools';
 
 const client = new BedrockRuntimeClient({ region: process.env.AWS_REGION ?? 'us-east-1' });
 const MODEL_ID = process.env.BEDROCK_CHAT_MODEL_ID ?? 'us.anthropic.claude-sonnet-4-5-20250929-v1:0';
 
-// ConverseResponder has no live tool-calling wired up (that's what the Bedrock Agent, #22, is
-// for) - without this note, the model tries to invoke the tools the shared system prompt
-// describes and leaks raw function-call-looking text into the reply instead of a real call.
-const NO_TOOLS_NOTE =
-  'Note: in this mode you have no live tool-calling access. Never emit function-call, ' +
-  'tool-invocation, or code-like syntax - answer directly from the pantry contents and recalled ' +
-  'memories below. If the user asks you to add, remove, or mark a pantry item, acknowledge it in ' +
-  'plain language the same way you already do for preferences; the actual update is not wired up ' +
-  'in this mode yet.';
+// Bounds the recall -> respond turn if the model keeps chaining tool calls.
+const MAX_TOOL_ROUNDS = 4;
 
-/** Direct Bedrock Converse call — the fallback path used until the Bedrock
- * Agent (#22) exists. Swap in an AgentResponder later without touching
+// The shared system prompt's "Acknowledge new preferences and feedback" section tells the model
+// it doesn't need to take an action for preferences (true — that's write()'s job). Left alone,
+// the model over-generalizes that to pantry actions too and just says "done" without calling
+// addItem/markConsumed/markWasted — confirmed live: zero tool-use stop reasons, zero Lambda
+// invocations, for a request that should have called addItem. This forces the distinction.
+const TOOLS_REQUIRED_NOTE =
+  'Clarification on the note above: that applies ONLY to preferences/feedback/waste patterns, ' +
+  'which really do persist automatically after this turn. It does NOT apply to pantry actions. ' +
+  'If the user asks you to add an item, mark something consumed or wasted, find recipes, or build ' +
+  'a shopping list, you MUST call the matching tool in this turn and use its actual result. Never ' +
+  'say an item was added, marked, or found unless the corresponding tool call actually returned ' +
+  'success — a verbal-only confirmation with no tool call is a bug, not a shortcut.';
+
+/** Direct Bedrock Converse call with real tool-calling against the deployed
+ * pantry/recipes/shopping-list Lambdas (see tools.ts) — the fallback path used
+ * until the Bedrock Agent (#22, permanently descoped — account-level AWS
+ * Maintenance Mode) exists. Swap in an AgentResponder later without touching
  * handleTurn()'s shape: both implement respond(). */
 export interface Responder {
   respond(userId: string, input: string, memories: RecalledMemory[]): Promise<string>;
@@ -62,17 +71,57 @@ export class ConverseResponder implements Responder {
 
     const pantryBlock = formatPantryBlock(await fetchPantryContents(userId));
 
-    const res = await client.send(
-      new ConverseCommand({
-        modelId: MODEL_ID,
-        system: [{ text: SYSTEM_PROMPT }, { text: NO_TOOLS_NOTE }],
-        messages: [
-          { role: 'user', content: [{ text: `${pantryBlock}\n\n${memoryBlock}\n\nUser: ${input}` }] },
-        ],
-        inferenceConfig: { maxTokens: 500, temperature: 0.4 },
-      }),
-    );
+    const messages: Message[] = [
+      { role: 'user', content: [{ text: `${pantryBlock}\n\n${memoryBlock}\n\nUser: ${input}` }] },
+    ];
 
-    return res.output?.message?.content?.[0]?.text ?? '';
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      const res = await client.send(
+        new ConverseCommand({
+          modelId: MODEL_ID,
+          system: [{ text: SYSTEM_PROMPT }, { text: TOOLS_REQUIRED_NOTE }],
+          messages,
+          toolConfig: TOOL_CONFIG,
+          inferenceConfig: { maxTokens: 500, temperature: 0.4 },
+        }),
+      );
+
+      const message = res.output?.message;
+      if (!message) return '';
+
+      if (res.stopReason !== 'tool_use') {
+        return message.content?.find((c) => c.text)?.text ?? '';
+      }
+
+      messages.push(message);
+
+      const toolUseBlocks = (message.content ?? []).filter((c) => c.toolUse);
+      const toolResults: ContentBlock[] = await Promise.all(
+        toolUseBlocks.map(async (c) => {
+          const toolUse = c.toolUse!;
+          try {
+            const result = await executeTool(userId, toolUse.name ?? '', (toolUse.input as Record<string, unknown>) ?? {});
+            // Bedrock requires toolResult.json to be a JSON *object* — several tools (listItems,
+            // getExpiringItems, findRecipes, buildShoppingList) return arrays, which Bedrock
+            // rejects outright ("Provide a json object for the field"). Wrap uniformly.
+            return {
+              toolResult: { toolUseId: toolUse.toolUseId, content: [{ json: { result } }] },
+            } as unknown as ContentBlock;
+          } catch (err) {
+            return {
+              toolResult: {
+                toolUseId: toolUse.toolUseId,
+                content: [{ text: err instanceof Error ? err.message : 'Tool call failed.' }],
+                status: 'error' as const,
+              },
+            } as unknown as ContentBlock;
+          }
+        }),
+      );
+
+      messages.push({ role: 'user', content: toolResults });
+    }
+
+    return "That took more steps than expected — could you try rephrasing?";
   }
 }
