@@ -32,6 +32,8 @@ export const handler = async (event: ShoppingListInput) => {
     const missing = await buildShoppingList(event);
     return { statusCode: 200, body: JSON.stringify(missing) };
   } catch (err) {
-    return { statusCode: 400, body: JSON.stringify({ error: (err as Error).message }) };
+    // Don't echo raw DB/internal error text back to the caller.
+    console.error('shopping-list handler error:', err);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Internal server error' }) };
   }
 };
