@@ -31,14 +31,26 @@
 .layout {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 220px 1fr 320px;
   gap: 24px;
   padding: 24px 0 32px;
   min-height: 0;
 }
 
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 200px 1fr;
+  }
+  .layout > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 860px) {
   .layout {
     grid-template-columns: 1fr;
+  }
+  .layout > :last-child {
+    grid-column: auto;
   }
 }
