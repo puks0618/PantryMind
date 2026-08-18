@@ -5,9 +5,21 @@ interface Recipe {
   id: string;
   external_id: string | null;
   title: string;
-  ingredients: { name: string; amount?: string }[];
+  ingredients: { name: string; amount?: string; quantity?: number | null; unit?: string | null }[];
   instructions: string | null;
   source_url: string | null;
+}
+
+/**
+ * Spoonacular returns `amount` (number) and `unit` on each ingredient. These
+ * used to be dropped, which left every cached recipe unable to deduct anything
+ * from the pantry — see planCook() in packages/shared/src/cook.ts, which needs
+ * a real quantity to subtract.
+ */
+function toIngredient(i: any): { name: string; quantity: number | null; unit: string | null } {
+  const quantity = typeof i?.amount === 'number' && Number.isFinite(i.amount) ? i.amount : null;
+  const unit = typeof i?.unit === 'string' && i.unit.trim() !== '' ? i.unit.trim().toLowerCase() : null;
+  return { name: i.name, quantity, unit };
 }
 
 const SPOONACULAR_KEY = process.env.SPOONACULAR_API_KEY;
@@ -58,8 +70,8 @@ async function fetchCandidates(ingredients: string[]): Promise<Recipe[]> {
     external_id: String(d.id),
     title: d.title,
     ingredients: [
-      ...(d.usedIngredients ?? []).map((i: any) => ({ name: i.name })),
-      ...(d.missedIngredients ?? []).map((i: any) => ({ name: i.name })),
+      ...(d.usedIngredients ?? []).map(toIngredient),
+      ...(d.missedIngredients ?? []).map(toIngredient),
     ],
     instructions: null,
     source_url: `https://spoonacular.com/recipes/${slugify(d.title)}-${d.id}`,
