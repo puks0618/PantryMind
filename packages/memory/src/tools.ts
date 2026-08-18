@@ -65,6 +65,30 @@ export const TOOL_CONFIG = {
     },
     {
       toolSpec: {
+        name: 'updateItem',
+        description:
+          "Adjust an existing pantry item's quantity, unit, name, category, or expiry — for PARTIAL use " +
+          "(e.g. 'I used half the chicken', 'we have 2 cups of rice left'). Do not use this for fully " +
+          "using up or discarding an item — call markConsumed or markWasted for that instead. If you " +
+          "don't have a precise new quantity to set, ask the user rather than guessing one.",
+        inputSchema: {
+          json: {
+            type: 'object',
+            required: ['item_id'],
+            properties: {
+              item_id: { type: 'string', description: "The pantry item's id." },
+              quantity: { type: 'number', description: 'New quantity remaining.' },
+              unit: { type: 'string', description: 'Unit for quantity, if it changed.' },
+              name: { type: 'string', description: 'New name, if correcting it.' },
+              category: { type: 'string', description: 'New category, if correcting it.' },
+              expires_at: { type: 'string', description: 'New ISO expiry date, if correcting it.' },
+            },
+          },
+        },
+      },
+    },
+    {
+      toolSpec: {
         name: 'getExpiringItems',
         description:
           'Get pantry items expiring soon, sorted most-urgent first. Use this before suggesting recipes so near-expiry items are prioritized.',
@@ -131,7 +155,10 @@ export const TOOL_CONFIG = {
   ],
 } as unknown as ToolConfiguration;
 
-const PANTRY_ACTIONS = new Set(['addItem', 'listItems', 'markConsumed', 'markWasted', 'getExpiringItems']);
+// deleteItem is intentionally not exposed as a tool — the UI's two-click arm/confirm delete is
+// the only path for a permanent, irreversible removal; chat only gets non-destructive actions
+// plus the reversible markConsumed/markWasted/updateItem.
+const PANTRY_ACTIONS = new Set(['addItem', 'listItems', 'updateItem', 'markConsumed', 'markWasted', 'getExpiringItems']);
 
 async function invoke(functionName: string, payload: unknown): Promise<unknown> {
   const res = await lambda.send(

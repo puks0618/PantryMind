@@ -17,10 +17,13 @@ const MAX_TOOL_ROUNDS = 4;
 const TOOLS_REQUIRED_NOTE =
   'Clarification on the note above: that applies ONLY to preferences/feedback/waste patterns, ' +
   'which really do persist automatically after this turn. It does NOT apply to pantry actions. ' +
-  'If the user asks you to add an item, mark something consumed or wasted, find recipes, or build ' +
-  'a shopping list, you MUST call the matching tool in this turn and use its actual result. Never ' +
-  'say an item was added, marked, or found unless the corresponding tool call actually returned ' +
-  'success — a verbal-only confirmation with no tool call is a bug, not a shortcut.';
+  'If the user asks you to add an item, adjust a quantity, mark something consumed or wasted, find ' +
+  'recipes, or build a shopping list, you MUST call the matching tool in this turn and use its ' +
+  'actual result. Never say an item was added, updated, marked, or found unless the corresponding ' +
+  'tool call actually returned success — a verbal-only confirmation with no tool call is a bug, not ' +
+  'a shortcut. This applies especially to numbers: never state a new quantity, weight, or count ' +
+  'unless it came back from a real updateItem/addItem call. If you do not have an exact figure, ask ' +
+  'the user for one instead of estimating and presenting the estimate as if it were saved.';
 
 /** Direct Bedrock Converse call with real tool-calling against the deployed
  * pantry/recipes/shopping-list Lambdas (see tools.ts) — the fallback path used
