@@ -1,0 +1,130 @@
+:root {
+  --bg: #faf7f0;
+  --surface: #ffffff;
+  --surface-2: #f1ece1;
+  --ink: #211e1a;
+  --ink-muted: #6b655a;
+  --ink-faint: #9c9484;
+  --border: #e4ddcc;
+
+  --accent: #2f5233;
+  --accent-strong: #1e3a22;
+  --accent-soft: #e3ece0;
+  --accent-ink: #1b3620;
+
+  --memory: #c97a1d;
+  --memory-soft: #fbeed9;
+  --memory-ink: #7a4a0f;
+
+  --warn: #b8860b;
+  --warn-soft: #f5ead1;
+  --crit: #b23a2e;
+  --crit-soft: #f6dfdc;
+
+  --shadow-sm: 0 1px 2px rgba(33, 30, 26, 0.06);
+  --shadow-md: 0 4px 20px rgba(33, 30, 26, 0.08);
+
+  --font-display: var(--font-bricolage), "Bricolage Grotesque", ui-sans-serif, sans-serif;
+  --font-body: var(--font-work-sans), "Work Sans", ui-sans-serif, sans-serif;
+  --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14201a;
+    --surface: #1b2a21;
+    --surface-2: #22342a;
+    --ink: #ece7dc;
+    --ink-muted: #a9a08d;
+    --ink-faint: #6e6656;
+    --border: #2d4034;
+
+    --accent: #6fbf83;
+    --accent-strong: #8ed69e;
+    --accent-soft: #21362a;
+    --accent-ink: #b9e8c4;
+
+    --memory: #f0b152;
+    --memory-soft: #3a2c15;
+    --memory-ink: #f0c983;
+
+    --warn: #e0ab3f;
+    --warn-soft: #3a2f18;
+    --crit: #e2685c;
+    --crit-soft: #3a2320;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #14201a;
+  --surface: #1b2a21;
+  --surface-2: #22342a;
+  --ink: #ece7dc;
+  --ink-muted: #a9a08d;
+  --ink-faint: #6e6656;
+  --border: #2d4034;
+
+  --accent: #6fbf83;
+  --accent-strong: #8ed69e;
+  --accent-soft: #21362a;
+  --accent-ink: #b9e8c4;
+
+  --memory: #f0b152;
+  --memory-soft: #3a2c15;
+  --memory-ink: #f0c983;
+
+  --warn: #e0ab3f;
+  --warn-soft: #3a2f18;
+  --crit: #e2685c;
+  --crit-soft: #3a2320;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
